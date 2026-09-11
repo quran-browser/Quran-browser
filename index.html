@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المصحف الشريف مع التلاوة الصوتية الكاملة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --page-bg: #fefbf4;
+            --frame-gold: #8c6d36;
+            --text-color: #2b2b2b;
+            --primary: #1b4d3e;
+            --secondary: #AD8B73;
+        }
+        body {
+            font-family: 'Amiri', serif;
+            background-color: #2c221e;
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+        }
+        .container { max-width: 850px; margin: 0 auto; }
+        .mushaf-nav-bar, .audio-container, .tool-card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .mushaf-nav-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        select, button {
+            font-family: 'Amiri', serif;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        button { background-color: var(--primary); color: white; border: none; cursor: pointer; }
+        button:disabled { background-color: #95a5a6; }
+        select { background-color: #fdfcf7; border: 1px solid var(--primary); color: var(--primary); font-weight: bold; }
+        .page-card {
+            background-color: var(--page-bg);
+            border: 4px double var(--frame-gold);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        .page-text { font-size: 1.5rem; line-height: 2.3; text-align: justify; margin-top: 10px; }
+        .ayah-number { color: var(--frame-gold); font-size: 0.9rem; margin: 0 3px; }
+        .loading { text-align: center; font-size: 1.2rem; color: var(--primary); padding: 30px; background: #fff; border-radius: 8px; font-family: 'Cairo', sans-serif; }
+        .extra-tools-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .extra-tools-container { grid-template-columns: 1fr; } }
+        .tool-card h2 { color: var(--primary); font-size: 1.3rem; text-align: center; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 8px; font-family: 'Amiri', serif; }
+        .counter-display { font-size: 2.5rem; font-weight: bold; color: var(--primary); text-align: center; margin: 10px 0; }
+        .prayer-card { display: flex; justify-content: space-between; background: #fdfcf7; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; border-right: 4px solid var(--primary); font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="mushaf-nav-bar">
+            <div>
+                <button id="prevBtn" onclick="changePage(-1)">السابقة</button>
+                <button id="nextBtn" onclick="changePage(1)">التالية</button>
+            </div>
+            <div>
+                <select id="pageSelect" onchange="jumpToPage(this.value)">
+                    <!-- يتم تعبئتها بالأسماء مسبقاً -->
+                </select>
+            </div>
+        </div>
+
+        <div class="audio-container" style="text-align: center;">
+            <div id="audioNote" style="font-size: 0.9rem; color: #666; margin-bottom: 5px; font-family: 'Cairo', sans-serif;">استماع لتلاوة السورة الكاملة</div>
+            <audio id="quranAudio" controls style="width: 100%; height: 30px;"></audio>
+        </div>
+
+        <div id="pageContainer">
+            <div class="loading">جاري التحميل...</div>
+        </div>
+
+        <div class="extra-tools-container">
+            <div class="tool-card" style="font-family: 'Cairo', sans-serif;">
+                <h2>التسبيح والاسغفار</h2>
+                <div style="text-align: center;">
+                    <p id="dhikrText" style="color: var(--secondary); font-size: 1.1rem; margin: 5px 0;">سُبْحَانَ اللَّهِ وَبِحَمْدِهِ</p>
+                    <div class="counter-display" id="counter">0</div>
+                    <button onclick="incrementCounter()" style="width: 70%; background-color: var(--secondary); border-radius: 20px; margin-bottom: 8px;">تسبيح</button>
+                    <div>
+                        <button onclick="changeDhikr()" style="font-size: 0.85rem; padding: 4px 10px;">تغيير الذكر</button>
+                        <button onclick="resetCounter()" style="background-color: #c0392b; font-size: 0.85rem; padding: 4px 10px;">تصفير</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tool-card">
+                <h2>مواعيد الأذان (حسب موقعك)</h2>
+                <div id="prayerList">
+                    <div class="prayer-card"><span>الفجر</span><span id="t-Fajr">--:--</span></div>
+                    <div class="prayer-card"><span>الشروق</span><span id="t-Sunrise">--:--</span></div>
+                    <div class="prayer-card"><span>الظهر</span><span id="t-Dhuhr">--:--</span></div>
+                    <div class="prayer-card"><span>العصر</span><span id="t-Asr">--:--</span></div>
+                    <div class="prayer-card"><span>المغرب</span><span id="t-Maghrib">--:--</span></div>
+                    <div class="prayer-card"><span>العشاء</span><span id="t-Isha">--:--</span></div>
+                </div>
+                <div style="text-align: center; margin-top: 12px; font-family: 'Cairo', sans-serif;">
+                    <button id="adhanToggleBtn" onclick="toggleAdhan()" style="background-color: #27ae60; font-size: 0.9rem; padding: 6px 15px; border-radius: 20px; width: 100%;">
+                        <i class="fas fa-bell"></i> الأذان التلقائي: مفعل
+                    </button>
+                </div>
+                <audio id="adhanAutoAudio" src="https://islamic.network/audio/adhan/makkah.mp3" preload="auto"></audio>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPageNum = 1;
+        const totalPages = 604;
+        let isAdhanEnabled = true; // مفعل افتراضياً
+
+        const surahMap = {
+            1: "سورة الفاتحة", 2: "سورة البقرة", 22: "سورة البقرة", 50: "سورة آل عمران", 77: "سورة النساء", 106: "سورة النساء",
+            128: "سورة المائدة", 151: "سورة الأنعام", 177: "سورة الأعراف", 187: "سورة الأعراف", 207: "سورة الأنفال",
+            221: "سورة التوبة", 235: "سورة التوبة", 250: "سورة يونس", 262: "سورة هود", 282: "سورة يوسف", 293: "سورة الرعد",
+            305: "سورة إبراهيم", 312: "سورة الحجر", 322: "سورة النحل", 332: "سورة الإسراء", 342: "سورة الكهف", 353: "سورة مريم",
+            367: "سورة طه", 378: "سورة الأنبياء", 389: "سورة الحج", 398: "سورة المؤمنون", 408: "سورة النور", 418: "سورة الفرقان",
+            428: "سورة الشعراء", 442: "سورة النمل", 453: "سورة القصص", 462: "سورة العنكبوت", 472: "سورة الروم", 480: "سورة لقمان",
+            485: "سورة السجدة", 488: "سورة الأحزاب", 499: "سورة سبأ", 507: "سورة فاطر", 515: "سورة يس", 522: "سورة الصافات",
+            534: "سورة ص", 542: "سورة الزمر", 553: "سورة غافر", 562: "سورة فصلت", 567: "سورة الشورى", 572: "سورة الزخرف",
+            582: "سورة الدخان", 584: "سورة الجاثية", 587: "سورة الأحقاف", 592: "سورة محمد", 595: "سورة الفتح", 598: "سورة الحجرات",
+            600: "سورة ق", 602: "سورة الذاريات"
+        };
+
+        document.addEventListener("DOMContentLoaded", function() {
+            initSelectOptions();
+            loadPage(currentPageNum);
+            fetchPrayerTimes();
+            startAdhanTimer();
+        });
+
+        function initSelectOptions() {
+            const select = document.getElementById('pageSelect');
+            select.innerHTML = '';
+            let currentSurah = "سورة الفاتحة";
+            for (let i = 1; i <= totalPages; i++) {
+                if (surahMap[i]) {
+                    currentSurah = surahMap[i];
+                }
+                let opt = document.createElement('option');
+                opt.value = i;
+                opt.text = 'سورة ' + i + ' - ' + currentSurah;
+                select.appendChild(opt);
+            }
+        }
+
+        async function loadPage(pageNum) {
+            currentPageNum = parseInt(pageNum);
+            const container = document.getElementById('pageContainer');
+            document.getElementById('pageSelect').value = currentPageNum;
+            document.getElementById('prevBtn').disabled = (currentPageNum <= 1);
+            document.getElementById('nextBtn').disabled = (currentPageNum >= totalPages);
+
+            let cached = localStorage.getItem('q_p_' + currentPageNum);
+            if (cached) {
+                renderPage(JSON.parse(cached));
+                return;
+            }
+
+            container.innerHTML = '<div class="loading">جاري التحميل...</div>';
+
+            try {
+                let res = await fetch('https://api.alquran.cloud/v1/page/' + currentPageNum + '/ar.asad');
+                let data = await res.json();
+                if (data.code === 200) {
+                    localStorage.setItem('q_p_' + currentPageNum, JSON.stringify(data.data));
+                    renderPage(data.data);
+                } else {
+                    container.innerHTML = '<div class="loading">خطأ في التحميل، تحقق من الإنترنت.</div>';
+                }
+            } catch (e) {
+                container.innerHTML = '<div class="loading">تعذر الاتصال بالشبكة.</div>';
+            }
+        }
+
+        function renderPage(pageData) {
+            let container = document.getElementById('pageContainer');
+            let ayahsHtml = "";
+            if (pageData.ayahs && pageData.ayahs.length > 0) {
+                pageData.ayahs.forEach(function(a) {
+                    ayahsHtml += a.text + ' <span class="ayah-number">(' + a.numberInSurah + ')</span> ';
+                });
+            }
+            
+            container.innerHTML = '<div class="page-card"><div class="page-text">' + ayahsHtml + '</div></div>';
+
+            if (pageData.ayahs && pageData.ayahs.length > 0 && pageData.ayahs[0].surah) {
+                let sNum = pageData.ayahs[0].surah.number;
+                let surahName = pageData.ayahs[0].surah.name;
+                let pad = String(sNum).padStart(3, '0');
+                
+                document.getElementById('quranAudio').src = 'https://server8.mp3quran.net/afs/' + pad + '.mp3';
+                document.getElementById('audioNote').innerText = 'استماع لتلاوة ' + surahName + ' كاملة';
+            }
+        }
+
+        function changePage(dir) {
+            let target = currentPageNum + dir;
+            if (target >= 1 && target <= totalPages) loadPage(target);
+        }
+
+        function jumpToPage(val) {
+            if (val) loadPage(parseInt(val));
+        }
+
+        async function fetchPrayerTimes() {
+            try {
+                let response = await fetch('https://api.aladhan.com/v1/timingsByCity?city=Amman&country=Jordan&method=5');
+                let data = await response.json();
+                if (data.code === 200) {
+                    let timings = data.data.timings;
+                    updateTimeDisplay('Fajr', timings.Fajr);
+                    updateTimeDisplay('Sunrise', timings.Sunrise);
+                    updateTimeDisplay('Dhuhr', timings.Dhuhr);
+                    updateTimeDisplay('Asr', timings.Asr);
+                    updateTimeDisplay('Maghrib', timings.Maghrib);
+                    updateTimeDisplay('Isha', timings.Isha);
+                }
+            } catch (e) {
+                console.log("تعذر جلب المواقيت");
+            }
+        }
+
+        function format12H(time24) {
+            let parts = time24.split(':');
+            let h = parseInt(parts[0]);
+            let m = parts[1];
+            let ampm = h >= 12 ? 'م' : 'ص';
+            h = h % 12;
+            h = h ? h : 12;
+            return String(h).padStart(2, '0') + ':' + m + ' ' + ampm;
+        }
+
+        function updateTimeDisplay(prayerKey, time24) {
+            let formatted = format12H(time24);
+            let el = document.getElementById('t-' + prayerKey);
+            if (el) el.innerText = formatted;
+        }
+
+        function toggleAdhan() {
+            isAdhanEnabled = !isAdhanEnabled;
+            let btn = document.getElementById('adhanToggleBtn');
+            if (isAdhanEnabled) {
+                btn.style.backgroundColor = '#27ae60';
+                btn.innerHTML = '<i class="fas fa-bell"></i> الأذان التلقائي: مفعل';
+            } else {
+                btn.style.backgroundColor = '#c0392b';
+                btn.innerHTML = '<i class="fas fa-bell-slash"></i> الأذان التلقائي: متوقف';
+            }
+        }
+
+        let count = 0;
+        let dhikrArr = ["سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", "أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ", "سُبْحَانَ اللَّهِ العَظِيمِ", "الْحَمْدُ لِلَّهِ", "لَا إِلهَ إِلَّا اللَّهُ"];
+        let dhikrIdx = 0;
+
+        function incrementCounter() {
+            count++;
+            document.getElementById('counter').innerText = count;
+        }
+        function resetCounter() {
+            count = 0;
+            document.getElementById('counter').innerText = count;
+        }
+        function changeDhikr() {
+            dhikrIdx = (dhikrIdx + 1) % dhikrArr.length;
+            document.getElementById('dhikrText').innerText = dhikrArr[dhikrIdx];
+            resetCounter();
+        }
+
+        let lastMin = -1;
+        function startAdhanTimer() {
+            setInterval(function() {
+                if (!isAdhanEnabled) return;
+                let now = new Date();
+                let m = now.getMinutes();
+                let h = now.getHours();
+                
+                let ampm = h >= 12 ? 'م' : 'ص';
+                h = h % 12;
+                h = h ? h : 12;
+
+                let timeStr = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+                
+                let prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+                for (let p of prayers) {
+                    let el = document.getElementById('t-' + p);
+                    if (el && el.innerText === timeStr && m !== lastMin) {
+                        lastMin = m;
+                        document.getElementById('adhanAutoAudio').play().catch(function(){});
+                        break;
+                    }
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
