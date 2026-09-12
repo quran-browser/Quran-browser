@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المصحف الشريف مع التلاوة الصوتية الكاملة</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: Tahoma, sans-serif; background: #2c221e; color: #2b2b2b; margin: 0; padding: 10px; direction: rtl; }
+        .container { max-width: 420px; margin: 0 auto; }
+        .nav-bar, .card { background: #fff; padding: 10px; border-radius: 6px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .nav-bar { display: flex; justify-content: space-between; align-items: center; }
+        select, button { padding: 6px 10px; border-radius: 4px; font-size: 0.9rem; font-family: inherit; }
+        button { background: #1b4d3e; color: white; border: none; cursor: pointer; }
+        select { border: 1px solid #1b4d3e; color: #1b4d3e; font-weight: bold; width: 170px; font-size: 0.8rem; }
+        .index-btn { background: #AD8B73; font-weight: bold; }
+        .page-card { background: #fefbf4; border: 3px double #8c6d36; border-radius: 6px; padding: 15px; margin-bottom: 15px; min-height: 250px; }
+        .page-header { display: flex; justify-content: space-between; border-bottom: 2px solid #8c6d36; padding-bottom: 6px; margin-bottom: 10px; font-weight: bold; color: #1b4d3e; }
+        .audio-box { background: #fdf8ee; padding: 10px; border-radius: 8px; border: 1px solid #e6dcc3; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .play-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #2b2b2b; }
+        .progress-bar { flex-grow: 1; accent-color: #1b4d3e; }
+        .page-text { font-size: 1.15rem; line-height: 2.2; text-align: justify; }
+        .ayah-num { color: #8c6d36; font-size: 0.75rem; margin: 0 2px; font-weight: bold; }
+        
+        .bismillah-title { 
+            display: block; 
+            text-align: center; 
+            font-weight: bold; 
+            color: #8c6d36; 
+            margin: 20px auto; 
+            font-size: 1.3rem; 
+            width: 90%; 
+            border-top: 1px dashed #dcd1b5; 
+            border-bottom: 1px dashed #dcd1b5; 
+            padding: 10px 0; 
+            background: #fffdf9; 
+            box-shadow: inset 0 0 5px rgba(140, 109, 54, 0.05);
+        }
+
+        .tool-title { color: #1b4d3e; font-size: 1rem; text-align: center; margin: 0 0 8px 0; border-bottom: 2px solid #eee; padding-bottom: 4px; }
+        .prayer-row { display: flex; justify-content: space-between; background: #fdfcf7; padding: 4px 8px; border-radius: 4px; margin-bottom: 3px; border-right: 3px solid #1b4d3e; font-size: 0.85rem; }
+        #indexModal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); overflow-y: auto; }
+        .modal-content { background: #fefbf4; margin: 15% auto; padding: 15px; border: 2px solid #8c6d36; width: 85%; max-width: 350px; border-radius: 6px; }
+        .surah-list { display: flex; flex-direction: column; gap: 5px; max-height: 40vh; overflow-y: auto; }
+        .surah-item { background: #fff; padding: 6px; border: 1px solid #dcd1b5; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; font-size: 0.85rem; }
+        .surah-item:hover { background: #1b4d3e; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; color: #fefbf4; font-size: 1.05rem; margin-bottom: 10px;">المصحف الشريف مع التلاوة الصوتية الكاملة</h1>
+        
+        <div class="nav-bar">
+            <div><button onclick="chP(-1)">السابقة</button><button onclick="chP(1)">التالية</button></div>
+            <div><select id="pageSelect" onchange="loadPage(this.value)"></select></div>
+            <div><button class="index-btn" onclick="modal(true)">الفهرس</button></div>
+        </div>
+
+        <div class="page-card">
+            <div class="page-header"><span id="sName">الفاتحة</span><span id="pNum">ص 1</span></div>
+            <div class="audio-box">
+                <button class="play-btn" onclick="togglePlay()"><i class="fa-solid fa-play" id="pIcon"></i></button>
+                <input type="range" class="progress-bar" id="progressBar" value="0" min="0" max="100" oninput="seekAudio(this.value)">
+                <audio id="qAudio"></audio>
+            </div>
+            <div id="tContent" class="page-text">جاري التحميل...</div>
+        </div>
+
+        <div class="card">
+            <h3 class="tool-title">التسبيح والاستغفار</h3>
+            <div style="text-align: center;">
+                <p id="dText" style="color: #AD8B73; font-size: 0.9rem; margin: 4px 0;">سُبْحَانَ اللَّهِ وَبِحَمْدِهِ</p>
+                <div style="font-size: 1.8rem; font-weight: bold; color: #1b4d3e;" id="cnt">0</div>
+                <button onclick="cnt++; document.getElementById('cnt').innerText=cnt" style="width: 50%; background: #AD8B73; border-radius: 15px; margin: 5px 0;">تسبيح</button>
+                <div>
+                    <button onclick="chDhikr()" style="font-size: 0.75rem; padding: 2px 6px;">تغيير</button>
+                    <button onclick="cnt=0; document.getElementById('cnt').innerText=0" style="background: #c0392b; font-size: 0.75rem; padding: 2px 6px;">تصفير</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="tool-title">مواعيد الصلاة (الأردن)</h3>
+            <div>
+                <div class="prayer-row"><span>الفجر</span><span id="t-Fajr">--:--</span></div>
+                <div class="prayer-row"><span>الشروق</span><span id="t-Sunrise">--:--</span></div>
+                <div class="prayer-row"><span>الظهر</span><span id="t-Dhuhr">--:--</span></div>
+                <div class="prayer-row"><span>العصر</span><span id="t-Asr">--:--</span></div>
+                <div class="prayer-row"><span>المغرب</span><span id="t-Maghrib">--:--</span></div>
+                <div class="prayer-row"><span>العشاء</span><span id="t-Isha">--:--</span></div>
+            </div>
+            <div style="text-align: center; margin-top: 6px;">
+                <button id="adhBtn" onclick="toggleAdhan()" style="background: #27ae60; font-size: 0.75rem; padding: 3px 8px; width: 100%; border-radius: 15px;">الأذان التلقائي: مفعل</button>
+            </div>
+            <audio id="aAudio" src="https://islamic.network/audio/adhan/makkah.mp3" preload="auto"></audio>
+        </div>
+    </div>
+
+    <div id="indexModal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <h3 style="margin:0; color:#1b4d3e; font-size:0.95rem;">فهرس السور</h3>
+                <button onclick="modal(false)" style="background:#c0392b; font-size:0.75rem; padding:2px 6px;">إغلاق</button>
+            </div>
+            <div class="surah-list" id="sGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        const sData = [{n:"الفاتحة",p:1},{n:"البقرة",p:2},{n:"آل عمران",p:50},{n:"النساء",p:77},{n:"المائدة",p:106},{n:"الأنعام",p:128},{n:"الأعراف",p:151},{n:"الأنفال",p:177},{n:"التوبة",p:187},{n:"يونس",p:208},{n:"هود",p:221},{n:"يوسف",p:235},{n:"الرعد",p:250},{n:"إبراهيم",p:255},{n:"الحجر",p:262},{n:"النحل",p:267},{n:"الإسراء",p:282},{n:"الكهف",p:293},{n:"مريم",p:305},{n:"طه",p:312},{n:"الأنبياء",p:322},{n:"الحج",p:332},{n:"المؤمنون",p:342},{n:"النور",p:350},{n:"الفرقان",p:359},{n:"الشعراء",p:367},{n:"النمل",p:377},{n:"القصص",p:385},{n:"العنكبوت",p:396},{n:"الروم",p:404},{n:"لقمان",p:411},{n:"السجدة",p:415},{n:"الأحزاب",p:418},{n:"سبأ",p:428},{n:"فاطر",p:434},{n:"يس",p:440},{n:"الصافات",p:446},{n:"ص",p:453},{n:"الزمر",p:458},{n:"غافر",p:467},{n:"فصلت",p:477},{n:"الشورى",p:483},{n:"الزخرف",p:489},{n:"الدخان",p:496},{n:"الجاثية",p:499},{n:"الأحقاف",p:502},{n:"محمد",p:507},{n:"الفتح",p:511},{n:"الحجرات",p:515},{n:"ق",p:518},{n:"الذاريات",p:520},{n:"الطور",p:523},{n:"النجم",p:526},{n:"القمر",p:528},{n:"الرحمن",p:531},{n:"الواقعة",p:534},{n:"الحديد",p:537},{n:"المجادلة",p:542},{n:"الحشر",p:545},{n:"الممتحنة",p:549},{n:"الصف",p:551},{n:"الجمعة",p:553},{n:"المنافقون",p:554},{n:"التغابن",p:556},{n:"الطلاق",p:558},{n:"التحريم",p:560},{n:"الملك",p:562},{n:"القلم",p:564},{n:"الحاقة",p:566},{n:"المعارج",p:568},{n:"نوح",p:570},{n:"الجن",p:572},{n:"المزمل",p:574},{n:"المدثر",p:575},{n:"القيامة",p:577},{n:"الإنسان",p:578},{n:"المرسلات",p:580},{n:"النبأ",p:582},{n:"النازعات",p:583},{n:"عبس",p:585},{n:"التكوير",p:586},{n:"الانفطار",p:587},{n:"المطففين",p:588},{n:"الانشقاق",p:589},{n:"البروج",p:590},{n:"الطارق",p:591},{n:"الأعلى",p:591},{n:"الغاشية",p:592},{n:"الفجر",p:593},{n:"البلد",p:594},{n:"الشمس",p:595},{n:"الليل",p:595},{n:"الضحى",p:596},{n:"الشرح",p:596},{n:"التين",p:597},{n:"العلق",p:597},{n:"القدر",p:598},{n:"البينة",p:598},{n:"الزلزلة",p:599},{n:"العاديات",p:599},{n:"القارعة",p:600},{n:"التكاثر",p:600},{n:"العصر",p:601},{n:"الهمزة",p:601},{n:"الفيل",p:601},{n:"قريش",p:602},{n:"الماعون",p:602},{n:"الكوثر",p:602},{n:"الكافرون",p:603},{n:"النصر",p:603},{n:"المسد",p:603},{n:"الإخلاص",p:604},{n:"الفلق",p:604},{n:"الناس",p:604}];
+        let curP = parseInt(localStorage.getItem('p')) || 1, adhOn = true, audio = document.getElementById('qAudio');
+        
+        let audioPlaylist = [];
+        let currentAudioIndex = 0;
+
+        function getS(p) {
+            let name = "الفاتحة";
+            for(let i=0; i<sData.length; i++) {
+                if(p >= sData[i].p) name = sData[i].n;
+            }
+            return name;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            let sel = document.getElementById('pageSelect');
+            for(let i=1; i<=604; i++) sel.innerHTML += `<option value="${i}">ص ${i} - ${getS(i)}</option>`;
+            let grid = document.getElementById('sGrid');
+            sData.forEach((s, i) => grid.innerHTML += `<div class="surah-item" onclick="loadPage(${s.p}); modal(false);"><span>${i+1}. سورة ${s.n}</span><span>ص ${s.p}</span></div>`);
+            
+            fetchT();
+            setInterval(chkAdhan, 1000);
+            loadPage(curP);
+
+            audio.addEventListener('ended', () => {
+                currentAudioIndex++;
+                if (currentAudioIndex < audioPlaylist.length) {
+                    audio.src = audioPlaylist[currentAudioIndex];
+                    audio.play().catch(() => {});
+                } else {
+                    document.getElementById('pIcon').className = "fa-solid fa-play";
+                    document.getElementById('progressBar').value = 0;
+                }
+            });
+
+            audio.addEventListener('timeupdate', () => {
+                if (audio.duration) {
+                    let progress = (audio.currentTime / audio.duration) * 100;
+                    document.getElementById('progressBar').value = progress;
+                }
+            });
+        });
+
+        async function loadPage(p) {
+            curP = parseInt(p);
+            localStorage.setItem('p', curP);
+            document.getElementById('pageSelect').value = curP;
+            document.getElementById('sName').innerText = "سورة " + getS(curP);
+            document.getElementById('pNum').innerText = "ص " + curP;
+            
+            audio.pause();
+            document.getElementById('pIcon').className = "fa-solid fa-play";
+            document.getElementById('progressBar').value = 0;
+            audioPlaylist = [];
+            currentAudioIndex = 0;
+
+            try {
+                let res = await fetch(`https://api.alquran.cloud/v1/page/${curP}/quran-uthmani`);
+                let d = await res.json();
+                let aRes = await fetch(`https://api.alquran.cloud/v1/page/${curP}/ar.alafasy`);
+                let aData = await aRes.json();
+                
+                if(d.code === 200) {
+                    let txt = '';
+                    
+                    // إذا كنا في الصفحة الأولى (سورة الفاتحة)، نعرض إطار البسملة أولاً
+                    if (curP === 1) {
+                        txt += '<span class="bismillah-title">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</span>';
+                    }
+
+                    d.data.ayahs.forEach(v => {
+                        let t = v.text;
+                        
+                        // للبقية (ما عدا سورة التوبة رقم 9)
+                        if (v.numberInSurah === 1 && v.surah.number !== 9) {
+                            if (curP !== 1) {
+                                txt += '<span class="bismillah-title">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</span>';
+                            }
+                            
+                            // تنظيف نص الآية الأولى في كل السور (بما فيها الفاتحة) لكي تحذف البسملة من داخلها تماماً
+                            t = t.replace(/^بِسْمِ\s+[ٱل]*لَّهِ\s+[ٱلرَّحْمَٰنِٱلرَّحِيمِ\s]+/g, "")
+                                 .replace(/^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/g, "")
+                                 .replace(/بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ/g, "")
+                                 .trim();
+                        }
+                        
+                        if(t) txt += t + ` <span class="ayah-num">(${v.numberInSurah})</span> `;
+                    });
+                    document.getElementById('tContent').innerHTML = txt;
+                }
+                
+                if(aData.code === 200 && aData.data.ayahs.length > 0) {
+                    audioPlaylist = aData.data.ayahs.map(ayah => ayah.audio);
+                    audio.src = audioPlaylist[0];
+                    audio.load();
+                }
+            } catch { document.getElementById('tContent').innerHTML = "خطأ في الاتصال."; }
+        }
+
+        function togglePlay() {
+            let icon = document.getElementById('pIcon');
+            if(audioPlaylist.length === 0) return;
+            if(audio.paused) {
+                audio.play().then(() => {
+                    icon.className = "fa-solid fa-pause";
+                }).catch(() => {});
+            } else {
+                audio.pause();
+                icon.className = "fa-solid fa-play";
+            }
+        }
+
+        function seekAudio(val) {
+            if(audio.duration) {
+                audio.currentTime = (val / 100) * audio.duration;
+            }
+        }
+
+        function chP(d) { if(curP+d >= 1 && curP+d <= 604) loadPage(curP+d); }
+        function modal(o) { document.getElementById('indexModal').style.display = o ? 'block' : 'none'; }
+        
+        let dIdx = 0, dhikrs = ["سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", "أَسْتَغْفِرُ اللَّهَ", "سُبْحَانَ اللَّهِ العَظِيمِ", "الْحَمْدُ لِلَّهِ", "لَا إِلهَ إِلَّا اللَّهُ"];
+        let cnt = 0;
+        function chDhikr() { document.getElementById('dText').innerText = dhikrs[dIdx = (dIdx + 1) % dhikrs.length]; cnt=0; document.getElementById('cnt').innerText=0; }
+
+        async function fetchT() {
+            try {
+                let res = await fetch('https://api.aladhan.com/v1/timingsByCity?city=Amman&country=Jordan&method=5');
+                let d = (await res.json()).data.timings;
+                ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].forEach(k => {
+                    let p = d[k].split(':'), h = parseInt(p[0]), m = p[1];
+                    document.getElementById('t-'+k).innerText = String(h%12 || 12).padStart(2,'0') + ':' + m + ' ' + (h >= 12 ? 'م' : 'ص');
+                });
+            } catch {}
+        }
+
+        function toggleAdhan() {
+            adhOn = !adhOn;
+            let b = document.getElementById('adhBtn');
+            b.style.background = adhOn ? '#27ae60' : '#c0392b';
+            b.innerText = adhOn ? 'الأذان التلقائي: مفعل' : 'الأذان التلقائي: متوقف';
+        }
+
+        let lastM = -1;
+        function chkAdhan() {
+            if(!adhOn) return;
+            let now = new Date(), m = now.getMinutes(), h = now.getHours();
+            let tStr = String(h%12 || 12).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ' ' + (h >= 12 ? 'م' : 'ص');
+            ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].forEach(k => {
+                let el = document.getElementById('t-'+k);
+                if(el && el.innerText === tStr && m !== lastM) {
+                    lastM = m;
+                    document.getElementById('aAudio').play().catch(()=>{});
+                }
+            });
+        }
+    </script>
+</body>
+</html>
